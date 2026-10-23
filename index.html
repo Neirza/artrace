@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Artee — Drawing &amp; Tracing Studio</title>
+  <meta name="description"
+    content="A professional drawing and tracing application. Import reference images, trace over them, and export only your artwork.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- ═══════════════════ TOP BAR ═══════════════════ -->
+    <header id="topBar" class="top-bar">
+      <div class="top-bar-left">
+        <div class="app-logo">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#35a3e8" />
+                <stop offset="100%" stop-color="#ab47bc" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"
+              fill="url(#logoGrad)" />
+          </svg>
+          <span>Artee</span>
+        </div>
+        <span class="app-version" id="appVersion" title="Application version">v1.0.2</span>
+        <button id="btnBackToGallery" class="top-btn back-gallery-btn"
+          title="Save your progress and return to My Gallery">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor" />
+          </svg>
+          <span class="btn-text">Gallery</span>
+        </button>
+        <span id="currentProjectTitle" class="project-title" title="Current artwork"></span>
+      </div>
+
+      <div class="top-bar-center">
+        <button id="btnUndo" class="top-btn" title="Undo (Ctrl+Z)" disabled>
+          <svg viewBox="0 0 24 24" width="17" height="17">
+            <path
+              d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.74L3 8v8h8l-2.81-2.81C9.58 11.85 10.97 11 12.5 11c2.83 0 5.15 2.08 5.58 4.8l2.87-.48C20.43 11.84 16.81 8 12.5 8z"
+              fill="currentColor" />
+          </svg>
+        </button>
+        <button id="btnRedo" class="top-btn" title="Redo (Ctrl+Shift+Z)" disabled>
+          <svg viewBox="0 0 24 24" width="17" height="17">
+            <path
+              d="M18.33 10.74C16.55 9.04 14.15 8 11.5 8c-4.31 0-7.93 3.84-8.45 7.32l2.87.48C6.35 13.08 8.67 11 11.5 11c1.53 0 2.92.85 4.31 2.19L13 16h8V8l-2.67 2.74z"
+              fill="currentColor" />
+          </svg>
+        </button>
+        <div class="top-sep"></div>
+        <button id="btnClear" class="top-btn" title="Clear Active Layer">
+          <svg viewBox="0 0 24 24" width="17" height="17">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              fill="currentColor" />
+          </svg>
+        </button>
+        <div class="top-sep"></div>
+        <button id="btnExportPNG" class="top-btn accent-btn" title="Export drawing as PNG (no reference image)">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor" />
+          </svg>
+          <span class="btn-text">Export</span>
+        </button>
+        <button id="btnSave" class="top-btn" title="Save project to this browser (Ctrl+S). Auto-saves as you work.">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm-5 16a3 3 0 110-6 3 3 0 010 6zm3-10H5V5h10v4z"
+              fill="currentColor" />
+          </svg>
+          <span class="btn-text">Save</span>
+        </button>
+      </div>
+
+      <div class="top-bar-right">
+        <button id="btnOutput" class="top-btn"
+          title="Open a clean output window that shows ONLY your drawing (no reference). Keep tracing on this canvas, and share the Output window in Discord.">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path d="M21 3H3a2 2 0 00-2 2v12a2 2 0 002 2h5v2h8v-2h5a2 2 0 002-2V5a2 2 0 00-2-2zm0 14H3V5h18v12z"
+              fill="currentColor" />
+          </svg>
+          <span class="btn-text">Output</span>
+        </button>
+        <button id="btnOutputFollow" class="top-btn active"
+          title="When ON, the Output follows your zoom & pan (shows what you're zoomed into). When OFF, it shows the whole canvas.">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"
+              fill="currentColor" />
+          </svg>
+          <span class="btn-text">Follow view</span>
+        </button>
+        <span id="saveStatus" class="save-status"></span>
+        <button id="btnShortcuts" class="top-btn" title="Keyboard shortcuts (?)">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path
+              d="M4 6h16v12H4V6zm2 2v8h12V8H6zm1.5 2h2v1.5h-2V10zm0 2.5h2V14h-2v-1.5zM11 10h2v1.5h-2V10zm0 2.5h2V14h-2v-1.5z"
+              fill="currentColor" />
+          </svg>
+          <span class="btn-text">Keys</span>
+        </button>
+        <button id="btnPrivacy" class="top-btn"
+          title="Privacy / Focus mode (Ctrl+Shift+H) — hides all UI so only the canvas is visible while screen sharing">
+          <svg viewBox="0 0 24 24" width="17" height="17">
+            <path
+              d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.8 11.8 0 001 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2z"
+              fill="currentColor" />
+          </svg>
+          <span class="btn-text">Privacy</span>
+        </button>
+        <button id="btnStartRecord" class="top-btn rec-top-btn" title="Start Recording (reference excluded)">
+          <span class="rec-dot-static"></span><span class="btn-text">Record</span>
+        </button>
+        <button id="btnStopRecord" class="top-btn stop-top-btn hidden" title="Stop Recording">
+          <span class="rec-square"></span><span class="btn-text">Stop</span>
+        </button>
+        <div id="recordingIndicator" class="recording-indicator hidden">
+          <span class="rec-dot"></span> REC
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════ WORKSPACE ═══════════════════ -->
+    <main class="workspace">
+
+      <!-- Left Toolbar -->
+      <aside id="toolbarLeft" class="toolbar-left">
+        <div class="tool-scroll">
+
+          <div class="tool-group">
+            <span class="tool-group-label">Draw</span>
+            <button class="tool-btn active" data-tool="brush" title="Brush (B)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Brush</span>
+            </button>
+            <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4 4 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Eraser</span>
+            </button>
+            <button class="tool-btn" data-tool="fill" title="Fill / Paint Bucket (F)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M19 11.5c0-.83-.67-1.5-1.5-1.5S16 10.67 16 11.5c0 .62 1.5 3 1.5 3s1.5-2.38 1.5-3zM17.21 8.19l-4.42-4.41a.996.996 0 00-1.41 0L3.15 12c-.39.39-.39 1.02 0 1.41l5.66 5.66c.39.39 1.02.39 1.41 0l7.99-7.99c.39-.4.39-1.03 0-1.42l-.99-.99 -.01.02zM9.61 17.65L4.37 12.4l6.03-6.03 5.25 5.25-6.04 6.03z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Fill</span>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-group-label">Vector</span>
+            <button class="tool-btn" data-tool="curve"
+              title="Bézier Curve Tool (C) — Smooth lines & vector shapes. Press A to apply the curve">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="5" cy="18" r="2.2" fill="currentColor" />
+                <circle cx="19" cy="6" r="2.2" fill="currentColor" />
+                <path d="M5 18 C 5 9, 19 15, 19 6" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" />
+                <circle cx="8.5" cy="9" r="1.5" fill="currentColor" />
+                <line x1="5" y1="18" x2="8.5" y2="9" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2" />
+              </svg>
+              <span class="tool-tip">Bézier</span>
+            </button>
+            <button class="tool-btn" data-tool="fade-shape" title="Fade Shape Tool (H) — Soft feather & gradient fades">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="2" />
+                <path d="M12 4.5 C 16.14 4.5, 19.5 7.86, 19.5 12 C 19.5 16.14, 16.14 19.5, 12 19.5 Z"
+                  fill="currentColor" opacity="0.45" />
+                <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Fade</span>
+            </button>
+            <button class="tool-btn" data-tool="text" title="Text (T)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M5 4v3h5.5v12h3V7H19V4z" fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Text</span>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-group-label">Shapes</span>
+            <button class="tool-btn" data-tool="rect" title="Rectangle — Drag to draw (O)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2" />
+              </svg>
+              <span class="tool-tip">Rect</span>
+            </button>
+            <button class="tool-btn" data-tool="ellipse" title="Circle / Ellipse — Drag to draw (U)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <ellipse cx="12" cy="12" rx="8.5" ry="6.5" fill="none" stroke="currentColor" stroke-width="2" />
+              </svg>
+              <span class="tool-tip">Ellipse</span>
+            </button>
+            <button class="tool-btn" data-tool="line" title="Straight Line — Drag to draw (L)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <line x1="5" y1="19" x2="19" y2="5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                <circle cx="5" cy="19" r="1.6" fill="currentColor" />
+                <circle cx="19" cy="5" r="1.6" fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Line</span>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-group-label">Select</span>
+            <button class="tool-btn" data-tool="transform" title="Transform Reference — Move / Scale / Rotate (R)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M12 2l2.4 4.8L12 6l-2.4.8L12 2zm0 20l-2.4-4.8L12 18l2.4-.8L12 22zM2 12l4.8-2.4L6 12l.8 2.4L2 12zm20 0l-4.8 2.4L18 12l-.8-2.4L22 12z"
+                  fill="currentColor" />
+                <rect x="9" y="9" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6" />
+              </svg>
+              <span class="tool-tip">Transform</span>
+            </button>
+            <button class="tool-btn" data-tool="layer-transform" title="Move Layer — Move / Scale / Rotate (M)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M12 2.5l2.1 2.1h-1.35v6.15h6.15V9.4L21 11.5l-2.1 2.1v-1.35h-6.15v6.15h1.35L12 20.5l-2.1-2.1h1.35v-6.15H5.1v1.35L3 11.5l2.1-2.1v1.35h6.15V4.6H9.9L12 2.5z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Move Layer</span>
+            </button>
+            <button class="tool-btn" data-tool="select" title="Rectangular Selection (S)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M3 5h2V3a2 2 0 00-2 2zm0 6h2V9H3v2zm0 4h2v-2H3v2zm0 4h2v-2H3v2zm0 2v-2H1a2 2 0 002 2zM9 21h2v-2H9v2zm4 0h2v-2h-2v2zm4 0h2v-2h-2v2zm4-2v2a2 2 0 002-2h-2zM21 3a2 2 0 00-2-2h-2v2h2v2h2V5zm0 4h-2v2h2V9zm0 4h-2v2h2v-2zm-8-8h2V3h-2v2zM9 3h2V1H9v2zm4 0h2V1h-2v2z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Select</span>
+            </button>
+            <button class="tool-btn" data-tool="wand" title="Magic Wand — Select by color (W)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M6.5 21.5l2.8-6.7 3.9 3.9L6.5 21.5z" fill="currentColor" opacity="0.55" />
+                <path
+                  d="M12.1 10.6c.4-1 1.4-1.8 2.5-1.8.2 0 .4 0 .6.1l.9-.9 1.4 1.4-.9.9c.1.2.1.4.1.6 0 1.1-.8 2.1-1.8 2.5l-2.8 2.8-2.8-2.8 2.8-2.8z"
+                  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <circle cx="18.5" cy="5.5" r="1.4" fill="currentColor" />
+                <circle cx="20.5" cy="9" r="1.1" fill="currentColor" opacity="0.7" />
+                <circle cx="16" cy="4" r="0.9" fill="currentColor" opacity="0.5" />
+              </svg>
+              <span class="tool-tip">Wand</span>
+            </button>
+            <button class="tool-btn" data-tool="eyedropper" title="Color Picker (I)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.23-1.21-1.42 1.42 1.21 1.21-6.88 6.88A2 2 0 005 16.13V19h2.83c.53 0 1.04-.21 1.41-.59l6.88-6.88 1.21 1.21 1.42-1.42-1.23-1.21 3.12-3.12a1 1 0 00.14-1.36zM7.41 17H6v-1.41l6.88-6.88 1.41 1.41L7.41 17z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Picker</span>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-group-label">View</span>
+            <button class="tool-btn" data-tool="move" title="Move / Pan View (G or Space)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M23 5.5V20c0 2.2-1.8 4-4 4h-7.3c-1.08 0-2.1-.43-2.85-1.19L1 14.83s1.26-1.23 1.3-1.25c.22-.19.49-.29.79-.29.22 0 .42.06.6.16l4.31 2.46V4c0-.83.67-1.5 1.5-1.5S11 3.17 11 4v7h1V1.5c0-.83.67-1.5 1.5-1.5S15 .67 15 1.5V11h1V2.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V11h1V5.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Move</span>
+            </button>
+            <button class="tool-btn" data-tool="zoom" title="Zoom (Z)">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Zoom</span>
+            </button>
+          </div>
+
+          <div class="tool-group">
+            <span class="tool-group-label">Ref</span>
+            <button id="btnImportRef" class="tool-btn" title="Import Reference Image">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Import</span>
+            </button>
+            <button id="btnInsertImage" class="tool-btn" title="Insert Image onto a new layer">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm0 16H5V5h14v14zM8 13l2.5 3.01L14 11l4 6H6l2-4zm-1.5-3A1.5 1.5 0 108 7.5 1.5 1.5 0 006.5 10z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Insert</span>
+            </button>
+            <button id="btnToggleRef" class="tool-btn" title="Show / Hide Reference">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path
+                  d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                  fill="currentColor" />
+              </svg>
+              <span class="tool-tip">Ref</span>
+            </button>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Central Canvas -->
+      <section id="canvasArea" class="canvas-area">
+        <div id="canvasViewport" class="canvas-viewport">
+          <div id="canvasWrapper" class="canvas-wrapper">
+            <canvas id="displayCanvas" width="1920" height="1080"></canvas>
+            <canvas id="overlayCanvas" width="1920" height="1080"></canvas>
+          </div>
+        </div>
+
+        <div id="canvasOverlayHint" class="canvas-overlay-hint hidden"></div>
+
+        <!-- Text tool floating input -->
+        <input type="text" id="textInput" class="text-input hidden" spellcheck="false"
+          placeholder="Type text, Enter to place">
+        <div id="privacyControls" class="privacy-controls hidden">
+          <button id="btnPrivacyRef" class="privacy-exit" title="Show / hide the reference image while sharing">
+            <svg viewBox="0 0 24 24" width="15" height="15">
+              <path
+                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                fill="currentColor" />
+            </svg>
+            <span>Reference</span>
+          </button>
+          <button id="btnExitPrivacy" class="privacy-exit" title="Exit Privacy mode (Ctrl+Shift+H)">
+            <svg viewBox="0 0 24 24" width="15" height="15">
+              <path
+                d="M10 9V5l-7 7 7 7v-4h4v-7h-4zm11 3c0-.9-.8-1.7-2-2V5h-2v4.2L19 9c.6.5 1 1.1 1 2s-.4 1.5-1 2l-2 .8V18h2v-5c1.2-.3 2-1.1 2-2z"
+                fill="currentColor" />
+            </svg>
+            <span>Exit Privacy</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Panel -->
+      <aside id="panelRight" class="panel-right">
+
+        <!-- Color -->
+        <div class="panel-section collapsible" data-acc="color">
+          <h3 class="panel-title collapsible-head">
+            <svg viewBox="0 0 24 24" width="13" height="13">
+              <path
+                d="M12 3c0 0 0 0 0 0C6.48 3 2 7.48 2 13c0 4.42 3.58 8 8 8 1.66 0 3-1.34 3-3 0-.78-.3-1.48-.77-2-.29-.31-.47-.72-.47-1.18 0-.97.78-1.75 1.75-1.75H16c3.31 0 6-2.69 6-6 0-4.97-4.48-8-10-8zm-5.5 11c-.83 0-1.5-.67-1.5-1.5S5.67 11 6.5 11s1.5.67 1.5 1.5S7.33 14 6.5 14zm3-4C8.67 10 8 9.33 8 8.5S8.67 7 9.5 7s1.5.67 1.5 1.5S10.33 10 9.5 10zm5 0C13.67 10 13 9.33 13 8.5S13.67 7 14.5 7s1.5.67 1.5 1.5S15.33 10 14.5 10zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 11 17.5 11s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                fill="currentColor" />
+            </svg>
+            <span class="collapsible-label">Color</span>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+            </svg>
+          </h3>
+          <div class="collapsible-body">
+            <div class="color-row">
+              <div id="colorSwatch" class="color-swatch"></div>
+              <input type="color" id="colorPicker" value="#000000">
+              <input type="text" id="colorHex" class="color-hex" value="#000000" maxlength="7" spellcheck="false">
+            </div>
+            <div id="colorPresets" class="color-presets"></div>
+          </div>
+        </div>
+
+        <!-- Dynamic Tool Settings Panel -->
+        <div id="toolSettingsPanel" class="panel-section tool-settings-panel collapsible" data-acc="tools">
+          <h3 class="panel-title collapsible-head" id="toolSettingsTitle">
+            <svg viewBox="0 0 24 24" width="13" height="13">
+              <path
+                d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                fill="currentColor" />
+            </svg>
+            <span id="toolSettingsName" class="collapsible-label">Tool Properties</span>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+            </svg>
+          </h3>
+          <div class="collapsible-body">
+
+            <!-- Fade Shape Settings -->
+            <div id="fadeShapeControls" class="tool-subpanel hidden">
+              <div class="setting-label">Shape Form</div>
+              <div class="shape-chips">
+                <button class="chip active" data-fshape="rect">Rect</button>
+                <button class="chip" data-fshape="ellipse">Circle</button>
+                <button class="chip" data-fshape="radialFade">Glow</button>
+                <button class="chip" data-fshape="linearFade">Linear</button>
+                <button class="chip" data-fshape="star">Star</button>
+              </div>
+              <div class="setting-label" style="margin-top: 8px;">Fade Style</div>
+              <div class="shape-chips">
+                <button class="chip active" data-fmode="feather">Feather Edge</button>
+                <button class="chip" data-fmode="gradient">Fade Out</button>
+              </div>
+              <div class="slider-row" style="margin-top: 10px;">
+                <label>Softness</label>
+                <input type="range" id="fadeSoftness" min="4" max="120" value="30" class="styled-range accent-range">
+                <span id="fadeSoftnessVal" class="val">30 px</span>
+              </div>
+              <div class="tool-help-hint">Drag on canvas to cast soft feathered shapes.</div>
+            </div>
+
+            <!-- Bézier Curve Settings -->
+            <div id="bezierControls" class="tool-subpanel hidden">
+              <div class="setting-label">Curve Mode</div>
+              <div class="shape-chips">
+                <button class="chip active" id="btnCurveModeLine">Smooth Line</button>
+                <button class="chip" id="btnCurveModeShape">Closed Shape</button>
+              </div>
+              <div class="checkbox-row" style="margin-top: 8px;">
+                <label class="custom-check"><input type="checkbox" id="checkCurveStroke" checked> <span>Stroke
+                    Outline</span></label>
+                <label class="custom-check"><input type="checkbox" id="checkCurveFill"> <span>Fill Shape</span></label>
+              </div>
+              <div class="curve-status" id="curveStatusText">0 points placed</div>
+              <div class="curve-action-grid">
+                <button id="btnCommitCurve" class="action-btn success-btn"
+                  title="Stamp vector curve to layer (press A or Enter)">
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="currentColor" />
+                  </svg>
+                  Apply
+                </button>
+                <button id="btnToggleCloseCurve" class="action-btn" title="Toggle Close / Open curve">Close</button>
+                <button id="btnDeleteLastCurvePoint" class="action-btn" title="Remove last anchor">Undo Pt</button>
+                <button id="btnClearCurve" class="action-btn danger-btn" title="Cancel curve (Esc)">Clear</button>
+              </div>
+              <div class="tool-help-hint">Click on canvas to add anchors. Drag handles to adjust curves. Press
+                <strong>A</strong> (or Enter) to stamp the curve onto the layer.
+              </div>
+            </div>
+
+            <!-- Fill Settings -->
+            <div id="fillControls" class="tool-subpanel hidden">
+              <div class="slider-row">
+                <label>Tolerance</label>
+                <input type="range" id="fillTolerance" min="0" max="120" value="32" class="styled-range accent-range">
+                <span class="num-wrap"><input type="number" id="fillToleranceVal" class="num-input" min="0" max="120"
+                    step="1" value="32" inputmode="numeric" title="Color tolerance"><span
+                    class="num-unit"></span></span>
+              </div>
+              <label class="custom-check" style="margin-top:6px;"><input type="checkbox" id="fillContiguous" checked>
+                <span>Contiguous fill</span></label>
+              <label class="custom-check" style="margin-top:6px;"><input type="checkbox" id="fillEightWay">
+                <span>8-way (include diagonals)</span></label>
+              <label class="custom-check" style="margin-top:6px;"><input type="checkbox" id="fillPixelArt">
+                <span>Pixel-art mode (crisp edges)</span></label>
+              <div class="setting-label" style="margin-top:8px;">Sample from</div>
+              <div class="shape-chips" id="fillSampleChips">
+                <button type="button" class="chip active" data-sample="current">Current layer</button>
+                <button type="button" class="chip" data-sample="all">All visible layers</button>
+              </div>
+              <div class="tool-help-hint">Tap an enclosed area to fill it completely. Detects outlines on
+                other layers too, so fills stay inside lines without harming them. Use a separate colour layer
+                below your line art for clean, exact recolouring.</div>
+            </div>
+
+            <!-- Text Settings -->
+            <div id="textControls" class="tool-subpanel hidden">
+              <div class="slider-row">
+                <label>Font Size</label>
+                <input type="range" id="textSize" min="8" max="240" value="48" class="styled-range accent-range">
+                <span id="textSizeVal" class="val">48 px</span>
+              </div>
+              <div class="setting-label" style="margin-top:6px;">Style</div>
+              <div class="shape-chips">
+                <button class="chip active" data-textstyle="normal">Normal</button>
+                <button class="chip" data-textstyle="bold">Bold</button>
+                <button class="chip" data-textstyle="italic">Italic</button>
+              </div>
+              <div class="tool-help-hint">Click the canvas, type your text, then press Enter to place it on the active
+                layer.</div>
+            </div>
+
+            <!-- Selection Settings -->
+            <div id="selectControls" class="tool-subpanel hidden">
+              <div class="curve-status" id="selectStatusText">No selection</div>
+              <div class="curve-action-grid">
+                <button id="btnDeselect" class="action-btn danger-btn" style="grid-column:span 2;"
+                  title="Clear selection (Esc)">Deselect</button>
+              </div>
+              <div class="tool-help-hint">Drag on canvas to define a rectangular selection. Drawing, erasing and filling
+                stay inside it.</div>
+            </div>
+
+            <!-- Magic Wand (Select Detect) Settings -->
+            <div id="wandControls" class="tool-subpanel hidden">
+              <div class="curve-status" id="wandStatusText">Click a colour on the canvas to select it</div>
+              <div class="slider-row">
+                <label>Tolerance</label>
+                <input type="range" id="wandTolerance" min="0" max="120" value="32" class="styled-range accent-range">
+                <span class="num-wrap"><input type="number" id="wandToleranceVal" class="num-input" min="0" max="120"
+                    step="1" value="32" inputmode="numeric" title="Colour tolerance"><span
+                    class="num-unit"></span></span>
+              </div>
+              <div class="slider-row">
+                <label>Edge Softness</label>
+                <input type="range" id="wandFeather" min="0" max="8" value="2" class="styled-range accent-range">
+                <span class="num-wrap"><input type="number" id="wandFeatherVal" class="num-input" min="0" max="8"
+                    step="1" value="2" inputmode="numeric" title="Feather radius (px)"><span
+                    class="num-unit">px</span></span>
+              </div>
+              <div class="setting-label" style="margin-top:8px;">Sample from</div>
+              <div class="shape-chips" id="wandSampleChips">
+                <button type="button" class="chip active" data-sample="all">All visible layers</button>
+                <button type="button" class="chip" data-sample="current">Current layer</button>
+              </div>
+              <div class="curve-action-grid" style="margin-top:6px;">
+                <button id="btnWandDeselect" class="action-btn danger-btn" style="grid-column:span 2;"
+                  title="Clear the wand selection (Esc)">Deselect</button>
+              </div>
+              <div class="tool-help-hint">Click a colour to select the connected region that matches it. Raise the
+                tolerance for gradients, lower it for flat fills. The selection is feathered so edits keep smooth,
+                anti-aliased edges. Drawing, erasing and filling stay inside it.</div>
+            </div>
+
+            <!-- Shape / Ruler Settings -->
+            <div id="shapeControls" class="tool-subpanel hidden">
+              <div class="checkbox-row">
+                <label class="custom-check"><input type="checkbox" id="shapeFill" checked> <span>Fill
+                    shape</span></label>
+                <label class="custom-check"><input type="checkbox" id="shapeStroke" checked> <span>Stroke
+                    outline</span></label>
+              </div>
+              <div class="slider-row" style="margin-top:6px;">
+                <label>Line Width</label>
+                <input type="range" id="shapeLineWidth" min="1" max="100" value="5" class="styled-range accent-range">
+                <span class="num-wrap"><input type="number" id="shapeLineWidthVal" class="num-input" min="1" max="100"
+                    step="1" value="5" inputmode="numeric" title="Outline width (px)"><span
+                    class="num-unit">px</span></span>
+              </div>
+              <div class="tool-help-hint">Drag on the canvas to draw the shape. Hold <strong>Shift</strong> for a
+                square,
+                a perfect circle or a 45&deg; line. Release to stamp it onto the active layer.</div>
+            </div>
+
+            <!-- Transform Settings -->
+            <div id="transformControls" class="tool-subpanel hidden">
+              <div class="checkbox-row">
+                <label class="custom-check"><input type="checkbox" id="checkRefLocked"> <span>Lock
+                    reference</span></label>
+              </div>
+              <div class="curve-action-grid" style="margin-top:6px;">
+                <button id="btnRefResetTransform" class="action-btn"
+                  title="Reset position, scale & rotation">Reset</button>
+                <button id="btnRefFitTransform" class="action-btn" title="Fit reference to canvas">Fit</button>
+              </div>
+              <div class="tool-help-hint">Drag the box to move the reference. Drag a corner to scale, the top handle to
+                rotate. The reference layer is never part of your drawing.</div>
+            </div>
+
+            <!-- Move Layer Settings -->
+            <div id="layerTransformControls" class="tool-subpanel hidden">
+              <div class="slider-row">
+                <label>Scale</label>
+                <input type="range" id="layerScale" min="10" max="400" value="100" class="styled-range accent-range">
+                <span id="layerScaleVal" class="val">100%</span>
+              </div>
+              <div class="slider-row">
+                <label>Rotation</label>
+                <input type="range" id="layerRotation" min="-180" max="180" value="0" class="styled-range accent-range">
+                <span id="layerRotationVal" class="val">0&deg;</span>
+              </div>
+              <div class="curve-action-grid" style="margin-top:6px;">
+                <button id="btnLayerApply" class="action-btn" title="Apply the transform (Enter)">Apply</button>
+                <button id="btnLayerReset" class="action-btn"
+                  title="Reset position, scale &amp; rotation">Reset</button>
+              </div>
+              <button id="btnLayerCancel" class="action-btn danger-btn" style="width:100%;margin-top:6px;"
+                title="Cancel the transform (Esc)">Cancel</button>
+              <div class="tool-help-hint">Drag inside the box to move the layer. Drag a corner to scale, the top handle
+                to rotate. Scroll over the canvas to scale. Press <strong>Enter</strong> to apply or
+                <strong>Esc</strong> to cancel. Newly inserted images are selected automatically.
+              </div>
+            </div>
+
+            <!-- Default / General Settings -->
+            <div id="generalToolControls" class="tool-subpanel">
+              <div class="tool-help-hint" id="generalToolHint">Freehand brush active. Draw or trace over the reference
+                image.</div>
+
+              <!-- Brush Properties (collapsible) -->
+              <div id="brushPropsGroup" class="collapsible sub-collapsible" data-acc="brushProps">
+                <div class="collapsible-head subtle-head">
+                  <span class="collapsible-label">Brush Properties</span>
+                  <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="collapsible-body">
+                  <!-- Brush Type dropdown -->
+                  <div class="setting-label" id="brushTypeLabel">Brush Type</div>
+                  <div id="brushTypeDropdown" class="select-dropdown">
+                    <button type="button" id="brushTypeBtn" class="select-btn">
+                      <span id="brushTypeCurrent">Pen</span>
+                      <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14">
+                        <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                      </svg>
+                    </button>
+                    <div id="brushTypeGrid" class="brush-type-grid select-menu hidden"></div>
+                  </div>
+
+                  <!-- Live brush tip preview -->
+                  <canvas id="brushTipPreview" class="fade-preview brush-tip-preview" width="520" height="120"></canvas>
+
+                  <!-- Brush-specific extras (shown per brush type) -->
+                  <div class="slider-row brush-extra hidden" data-field="hardness" id="hardnessRow">
+                    <label>Hardness</label>
+                    <input type="range" id="brushHardness" min="0" max="100" value="100"
+                      class="styled-range accent-range">
+                    <span class="num-wrap"><input type="number" id="brushHardnessVal" class="num-input" min="0"
+                        max="100" step="1" value="100" inputmode="numeric" title="Edge hardness (%)"><span
+                        class="num-unit">%</span></span>
+                  </div>
+                  <div class="slider-row brush-extra hidden" data-field="spacing" id="spacingRow">
+                    <label>Spacing</label>
+                    <input type="range" id="brushSpacing" min="1" max="50" value="6" class="styled-range accent-range">
+                    <span class="num-wrap"><input type="number" id="brushSpacingVal" class="num-input" min="1" max="50"
+                        step="1" value="6" inputmode="numeric" title="Stamp spacing (% of size)"><span
+                        class="num-unit">%</span></span>
+                  </div>
+                  <div class="slider-row brush-extra hidden" data-field="flow" id="flowRow">
+                    <label>Flow</label>
+                    <input type="range" id="brushFlow" min="1" max="100" value="100" class="styled-range accent-range">
+                    <span class="num-wrap"><input type="number" id="brushFlowVal" class="num-input" min="1" max="100"
+                        step="1" value="100" inputmode="numeric" title="Paint flow per stamp (%)"><span
+                        class="num-unit">%</span></span>
+                  </div>
+                  <div class="slider-row brush-extra hidden" data-field="scatter" id="scatterRow">
+                    <label>Scatter</label>
+                    <input type="range" id="brushScatter" min="0" max="100" value="0" class="styled-range accent-range">
+                    <span class="num-wrap"><input type="number" id="brushScatterVal" class="num-input" min="0" max="100"
+                        step="1" value="0" inputmode="numeric" title="Position scatter (%)"><span
+                        class="num-unit">%</span></span>
+                  </div>
+                  <div class="brush-extra hidden" data-field="texture" id="textureRow">
+                    <div class="setting-label">Texture</div>
+                    <div id="brushTextureChips" class="shape-chips"></div>
+                  </div>
+
+                  <div class="tool-help-hint" id="brushTypeHint">Clean, solid, sharp strokes.</div>
+
+                  <div class="slider-row" id="stabilizerRow">
+                    <label>Stabilizer</label>
+                    <input type="range" id="brushStabilizer" min="0" max="90" value="45"
+                      class="styled-range accent-range">
+                    <span id="brushStabilizerVal" class="val">45%</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Force Fade (collapsible) -->
+              <div id="forceFadeGroup" class="collapsible sub-collapsible" data-acc="forceFade">
+                <div class="collapsible-head subtle-head">
+                  <span class="collapsible-label">Force Fade</span>
+                  <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+                    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                  </svg>
+                </div>
+                <div class="collapsible-body">
+                  <div class="checkbox-row" id="fadeEndsRow">
+                    <label class="custom-check"><input type="checkbox" id="checkFadeEnds"> <span>Enable Force
+                        Fade</span></label>
+                  </div>
+                  <div id="fadeControls" class="tool-subpanel hidden">
+                    <canvas id="fadePreviewCanvas" class="fade-preview" width="520" height="120"></canvas>
+                    <div class="slider-row">
+                      <label>Start Fade</label>
+                      <input type="range" id="fadeStart" min="0" max="100" value="0" class="styled-range accent-range">
+                      <span class="num-wrap"><input type="number" id="fadeStartVal" class="num-input" min="0" max="100"
+                          step="1" value="0" inputmode="numeric" title="Start fade (%)"><span
+                          class="num-unit">%</span></span>
+                    </div>
+                    <div class="slider-row">
+                      <label>End Fade</label>
+                      <input type="range" id="fadeEnd" min="0" max="100" value="100" class="styled-range accent-range">
+                      <span class="num-wrap"><input type="number" id="fadeEndVal" class="num-input" min="0" max="100"
+                          step="1" value="100" inputmode="numeric" title="End fade (%)"><span
+                          class="num-unit">%</span></span>
+                    </div>
+                    <div class="slider-row">
+                      <label>Fade Length</label>
+                      <input type="range" id="fadeLength" min="5" max="100" value="35"
+                        class="styled-range accent-range">
+                      <span class="num-wrap"><input type="number" id="fadeLengthVal" class="num-input" min="5" max="100"
+                          step="1" value="35" inputmode="numeric" title="Fade length (%)"><span
+                          class="num-unit">%</span></span>
+                    </div>
+                    <div class="slider-row">
+                      <label>Min Thickness</label>
+                      <input type="range" id="fadeMinThickness" min="0" max="100" value="12"
+                        class="styled-range accent-range">
+                      <span class="num-wrap"><input type="number" id="fadeMinThicknessVal" class="num-input" min="0"
+                          max="100" step="1" value="12" inputmode="numeric" title="Minimum thickness (%)"><span
+                          class="num-unit">%</span></span>
+                    </div>
+                    <div class="slider-row">
+                      <label>Min Opacity</label>
+                      <input type="range" id="fadeMinOpacity" min="0" max="100" value="20"
+                        class="styled-range accent-range">
+                      <span class="num-wrap"><input type="number" id="fadeMinOpacityVal" class="num-input" min="0"
+                          max="100" step="1" value="20" inputmode="numeric" title="Minimum opacity (%)"><span
+                          class="num-unit">%</span></span>
+                    </div>
+                    <div class="tool-help-hint">Strokes stay full thickness through the middle, then taper and fade
+                      toward the end. Fade Length is the share of the stroke used for the fade.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Reference -->
+        <div class="panel-section collapsible" data-acc="reference">
+          <h3 class="panel-title collapsible-head">
+            <svg viewBox="0 0 24 24" width="13" height="13">
+              <path
+                d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
+                fill="currentColor" />
+            </svg>
+            <span class="collapsible-label">Reference</span>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+            </svg>
+          </h3>
+          <div class="collapsible-body">
+            <div class="slider-row">
+              <label>Opacity</label>
+              <input type="range" id="refOpacity" min="0" max="100" value="60" class="styled-range accent-range">
+              <span id="refOpacityVal" class="val">60%</span>
+            </div>
+            <button id="btnRefPopout" class="sm-btn wide-btn"
+              title="Moves the reference into its own window and removes it from the canvas, so viewers only see your drawing. Click again to bring it back.">
+              <svg viewBox="0 0 24 24" width="14" height="14">
+                <path
+                  d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"
+                  fill="currentColor" />
+              </svg>
+              Hide reference from screen share (pop out)
+            </button>
+            <div id="refShareStatus" class="ref-info">Reference is on the canvas — viewers will see it.</div>
+            <div id="refInfo" class="ref-info">No reference loaded</div>
+          </div>
+        </div>
+
+        <!-- Layers -->
+        <div class="panel-section layers-panel collapsible" data-acc="layers">
+          <div class="panel-title-row collapsible-head">
+            <h3 class="panel-title">
+              <svg viewBox="0 0 24 24" width="13" height="13">
+                <path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27z"
+                  fill="currentColor" />
+              </svg>
+              Layers
+            </h3>
+            <div class="layer-btns">
+              <button id="btnAddLayer" class="sm-btn" title="Add Layer"><svg viewBox="0 0 24 24" width="14" height="14">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
+                </svg></button>
+              <button id="btnAddFolder" class="sm-btn" title="New Folder"><svg viewBox="0 0 24 24" width="14"
+                  height="14">
+                  <path
+                    d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-2v2h-2v-2h-2v-2h2v-2h2v2h2v2z"
+                    fill="currentColor" />
+                </svg></button>
+              <button id="btnDupLayer" class="sm-btn" title="Duplicate Layer"><svg viewBox="0 0 24 24" width="14"
+                  height="14">
+                  <path
+                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                    fill="currentColor" />
+                </svg></button>
+              <button id="btnDelLayer" class="sm-btn" title="Delete Layer"><svg viewBox="0 0 24 24" width="14"
+                  height="14">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                    fill="currentColor" />
+                </svg></button>
+              <button id="btnLayerUp" class="sm-btn" title="Move Up"><svg viewBox="0 0 24 24" width="14" height="14">
+                  <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" fill="currentColor" />
+                </svg></button>
+              <button id="btnLayerDown" class="sm-btn" title="Move Down"><svg viewBox="0 0 24 24" width="14"
+                  height="14">
+                  <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                </svg></button>
+            </div>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+            </svg>
+          </div>
+          <div class="collapsible-body">
+            <div class="slider-row layer-opacity-row">
+              <label>Opacity</label>
+              <input type="range" id="activeLayerOpacity" min="0" max="100" value="100" class="styled-range">
+              <span class="num-wrap"><input type="number" id="activeLayerOpacityVal" class="num-input" min="0" max="100"
+                  step="1" value="100" inputmode="numeric" title="Layer opacity (%)"><span
+                  class="num-unit">%</span></span>
+            </div>
+            <div id="layerList" class="layer-list"></div>
+          </div>
+        </div>
+
+        <!-- Filters / Effects -->
+        <div class="panel-section filters-panel collapsible" data-acc="filters">
+          <h3 class="panel-title collapsible-head">
+            <svg viewBox="0 0 24 24" width="13" height="13">
+              <path d="M3 5h18v2l-7 7v6l-4-2v-4L3 7z" fill="currentColor" />
+            </svg>
+            <span class="collapsible-label">Filters / Effects</span>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" width="14" height="14">
+              <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+            </svg>
+          </h3>
+          <div class="collapsible-body">
+            <div id="filterDropdown" class="select-dropdown">
+              <button type="button" id="filterMenuBtn" class="select-btn">
+                <span id="filterMenuCurrent">Choose an effect</span>
+                <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14">
+                  <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" fill="currentColor" />
+                </svg>
+              </button>
+              <div id="filterGrid" class="filter-grid select-menu up hidden"></div>
+            </div>
+            <div id="filterControls" class="tool-subpanel hidden">
+              <div class="slider-row">
+                <label id="filterValueLabel">Amount</label>
+                <input type="range" id="filterValue" min="0" max="100" value="0" class="styled-range accent-range">
+                <span class="num-wrap"><input type="number" id="filterValueVal" class="num-input" min="0" max="100"
+                    step="1" value="0" inputmode="numeric" title="Filter amount"><span class="num-unit"
+                    id="filterUnit"></span></span>
+              </div>
+              <div class="curve-action-grid">
+                <button id="btnFilterPreview" class="action-btn" title="Toggle the live preview">Preview</button>
+                <button id="btnFilterApply" class="action-btn success-btn"
+                  title="Apply the effect to the active layer">Apply</button>
+                <button id="btnFilterReset" class="action-btn" title="Reset the value to default">Reset</button>
+                <button id="btnFilterCancel" class="action-btn danger-btn"
+                  title="Discard the preview (undo)">Cancel</button>
+              </div>
+              <div class="tool-help-hint" id="filterHint">Pick a filter, adjust its value, then Apply. Preview is
+                non-destructive — Cancel restores the original layer.</div>
+            </div>
+            <div class="tool-help-hint" id="filterIdleHint">Choose an effect to preview and apply it to the active
+              layer.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ═══════════════════ BOTTOM BAR ═══════════════════ -->
+    <footer id="bottomBar" class="bottom-bar">
+      <div class="bot-group bot-left">
+        <button id="brushPreview" class="brush-preview" title="Current color — click to open color picker">
+          <span class="brush-preview-fill"></span>
+        </button>
+        <div class="bot-item slider-item">
+          <div class="bot-slider-head">
+            <span class="bot-label">Size</span>
+            <span class="num-wrap"><input type="number" id="brushSizeVal" class="num-input" min="1" max="400" step="1"
+                value="5" inputmode="numeric" title="Brush size (px)"><span class="num-unit">px</span></span>
+          </div>
+          <input type="range" id="brushSize" min="1" max="400" value="5" class="styled-range">
+        </div>
+        <div class="bot-item slider-item">
+          <div class="bot-slider-head">
+            <span class="bot-label">Opacity</span>
+            <span class="num-wrap"><input type="number" id="brushOpacityVal" class="num-input" min="1" max="100"
+                step="1" value="100" inputmode="numeric" title="Brush opacity (%)"><span
+                class="num-unit">%</span></span>
+          </div>
+          <input type="range" id="brushOpacity" min="1" max="100" value="100" class="styled-range">
+        </div>
+      </div>
+
+      <div class="bot-group bot-right">
+        <div class="bot-item zoom-row">
+          <button id="btnZoomOut" class="mini-btn" title="Zoom Out">−</button>
+          <span id="zoomLevel" class="zoom-val">100%</span>
+          <button id="btnZoomIn" class="mini-btn" title="Zoom In">+</button>
+          <button id="btnZoomFit" class="mini-btn fit-btn" title="Fit to screen">Fit</button>
+          <button id="btnZoomReset" class="mini-btn fit-btn" title="Actual size">1:1</button>
+        </div>
+        <div class="bot-sep"></div>
+        <div class="bot-item">
+          <button id="btnUndo2" class="mini-btn" title="Undo (Ctrl+Z)">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.74L3 8v8h8l-2.81-2.81C9.58 11.85 10.97 11 12.5 11c2.83 0 5.15 2.08 5.58 4.8l2.87-.48C20.43 11.84 16.81 8 12.5 8z"
+                fill="currentColor" />
+            </svg>
+          </button>
+          <button id="btnRedo2" class="mini-btn" title="Redo (Ctrl+Shift+Z)">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                d="M18.33 10.74C16.55 9.04 14.15 8 11.5 8c-4.31 0-7.93 3.84-8.45 7.32l2.87.48C6.35 13.08 8.67 11 11.5 11c1.53 0 2.92.85 4.31 2.19L13 16h8V8l-2.67 2.74z"
+                fill="currentColor" />
+            </svg>
+          </button>
+          <button id="btnLayersToggle" class="mini-btn fit-btn" title="Toggle layers panel">Layers</button>
+        </div>
+        <div class="bot-sep"></div>
+        <div class="bot-item info-row">
+          <span id="canvasInfo">1920 × 1080</span>
+          <span id="cursorPos"></span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Hidden inputs -->
+    <input type="file" id="refImageInput" accept="image/*" style="display:none">
+    <input type="file" id="insertImageInput" accept="image/*" style="display:none">
+    <canvas id="recordingCanvas" width="1920" height="1080" style="display:none"></canvas>
+
+  </div>
+
+  <!-- ═══════════════════ KEYBOARD SHORTCUTS ═══════════════════ -->
+  <div id="shortcutsPanel" class="shortcuts-panel hidden" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="shortcuts-head">
+      <h3>Keyboard shortcuts</h3>
+      <button id="btnCloseShortcuts" class="shortcuts-close" title="Close (Esc)">
+        <svg viewBox="0 0 24 24" width="16" height="16">
+          <path
+            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+            fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+    <div class="shortcuts-grid">
+      <div class="shortcuts-col">
+        <h4>Tools</h4>
+        <div class="shortcut-row"><span>B</span><span>Brush</span></div>
+        <div class="shortcut-row"><span>E</span><span>Eraser</span></div>
+        <div class="shortcut-row"><span>F</span><span>Fill / Paint bucket</span></div>
+        <div class="shortcut-row"><span>C</span><span>Bézier curve</span></div>
+        <div class="shortcut-row"><span>H</span><span>Fade shape</span></div>
+        <div class="shortcut-row"><span>T</span><span>Text</span></div>
+        <div class="shortcut-row"><span>O</span><span>Rectangle</span></div>
+        <div class="shortcut-row"><span>U</span><span>Circle / Ellipse</span></div>
+        <div class="shortcut-row"><span>L</span><span>Straight line</span></div>
+        <div class="shortcut-row"><span>S</span><span>Rectangular select</span></div>
+        <div class="shortcut-row"><span>W</span><span>Magic wand</span></div>
+        <div class="shortcut-row"><span>I</span><span>Color picker</span></div>
+        <div class="shortcut-row"><span>M</span><span>Move layer</span></div>
+        <div class="shortcut-row"><span>R</span><span>Transform reference</span></div>
+        <div class="shortcut-row"><span>G</span><span>Pan / move view</span></div>
+        <div class="shortcut-row"><span>Z</span><span>Zoom</span></div>
+      </div>
+      <div class="shortcuts-col">
+        <h4>Edit &amp; view</h4>
+        <div class="shortcut-row"><span>A</span><span>Apply Bézier curve</span></div>
+        <div class="shortcut-row"><span>Enter</span><span>Apply curve / layer</span></div>
+        <div class="shortcut-row"><span>Esc</span><span>Clear / deselect / cancel</span></div>
+        <div class="shortcut-row"><span>Del</span><span>Remove last curve point</span></div>
+        <div class="shortcut-row"><span>Ctrl+Z</span><span>Undo</span></div>
+        <div class="shortcut-row"><span>Ctrl+Shift+Z</span><span>Redo</span></div>
+        <div class="shortcut-row"><span>Ctrl+S</span><span>Save</span></div>
+        <div class="shortcut-row"><span>Space</span><span>Hold to pan</span></div>
+        <div class="shortcut-row"><span>Shift</span><span>Square / circle / 45°</span></div>
+        <div class="shortcut-row"><span>[ ]</span><span>Brush size</span></div>
+        <div class="shortcut-row"><span>+ −</span><span>Zoom in / out</span></div>
+        <div class="shortcut-row"><span>`</span><span>Toggle reference</span></div>
+        <div class="shortcut-row"><span>Ctrl+Shift+H</span><span>Privacy / focus mode</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MY GALLERY ═══════════════════ -->
+  <section id="galleryScreen" class="gallery-screen hidden" aria-hidden="true">
+    <header class="gallery-topbar">
+      <div class="gallery-brand">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <defs>
+            <linearGradient id="galleryLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#35a3e8" />
+              <stop offset="100%" stop-color="#ab47bc" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"
+            fill="url(#galleryLogoGrad)" />
+        </svg>
+        <div class="gallery-brand-text">
+          <span class="gallery-brand-name">Artee</span>
+          <span class="gallery-brand-sub">My Gallery</span>
+        </div>
+      </div>
+
+      <button id="btnGalleryNew" class="gallery-new-btn" title="Start a brand new canvas">
+        <svg viewBox="0 0 24 24" width="17" height="17">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
+        </svg>
+        New Canvas
+      </button>
+    </header>
+
+    <div class="gallery-body">
+      <div class="gallery-heading">
+        <h1 class="gallery-title">My Gallery</h1>
+        <span id="galleryCount" class="gallery-count"></span>
+      </div>
+
+      <div id="galleryGrid" class="gallery-grid hidden"></div>
+
+      <div id="galleryEmpty" class="gallery-empty hidden">
+        <svg viewBox="0 0 24 24" width="56" height="56">
+          <path
+            d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2 .92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 00-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 000-1.41z"
+            fill="currentColor" opacity="0.45" />
+        </svg>
+        <h2>No artworks yet</h2>
+        <p>Create your first canvas and start drawing or tracing.</p>
+        <button id="btnGalleryNewEmpty" class="gallery-new-btn big">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
+          </svg>
+          New Canvas
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+    <span id="loadingText" class="loading-text">Loading…</span>
+  </div>
+
+  <!-- Confirm / rename modal -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <h3 id="modalTitle" class="modal-title">Title</h3>
+      <p id="modalMessage" class="modal-message"></p>
+      <input type="text" id="modalInput" class="modal-input hidden" maxlength="60" spellcheck="false"
+        placeholder="Artwork title">
+      <div class="modal-actions">
+        <button id="modalCancel" class="action-btn">Cancel</button>
+        <button id="modalConfirm" class="action-btn success-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
