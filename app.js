@@ -52,6 +52,9 @@
     brushType: 'pen',      // active brush type id (see BRUSH_TYPES)
     brushSettings: {},     // per-brush-type tweakable settings (hardness, spacing, flow, scatter, texture)
     stabilization: 0.45,   // 0 = raw, higher = smoother (pressure-like easing)
+    pressureEnabled: true, // stylus pressure scales stroke width (pen / Apple Pencil)
+    pressureMin: 0.2,      // width factor at minimum pressure
+    strokePressure: 1,     // smoothed pressure factor for the live stroke
     // Force Fade â€” per painting tool, ibisPaint-style tapered/faded strokes.
     // All values are percentages (0-100). `length` = fraction of the stroke used
     // for the fade; `minThickness`/`minOpacity` = tip values.
@@ -1126,6 +1129,30 @@
     return v < 0 ? 0 : (v > 1 ? 1 : v);
   }
 
+  // Stylus pressure → stroke-width multiplier. Non-stylus input always maps to
+  // 1.0 (full width), so mouse and finger strokes stay predictable.
+  function pressureSizeMul(p) {
+    if (!state.pressureEnabled) return 1;
+    const v = Number(p);
+    const n = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+    const min = Math.max(0.05, Math.min(1, Number(state.pressureMin) || 0.2));
+    return min + (1 - min) * n;
+  }
+
+  function readPointerPressure(e, pointerType) {
+    if (!state.pressureEnabled) return 1;
+    if (pointerType === 'pen') {
+      const p = (e && typeof e.pressure === 'number') ? e.pressure : 0;
+      // Some drivers report 0 while in contact; treat that as full width.
+      return p > 0 ? Math.min(1, p) : 1;
+    }
+    if (pointerType === 'touch' && e && e.touches && e.touches[0]) {
+      const f = e.touches[0].force;
+      if (typeof f === 'number' && f > 0) return Math.min(1, f);
+    }
+    return 1;
+  }
+
   function unionBox(a, b) {
     if (!a) return { x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1 };
     return {
@@ -1392,7 +1419,8 @@
 
     if (n === 1) {
       const prof = fadeProfile(0, cfg, 0, 0, baseSize * f * 2);
-      const r = Math.max(0.25, Math.min(baseSize * 2, (baseSize * prof.w) / 2));
+      const pm = pressureSizeMul(pts[0].p);
+      const r = Math.max(0.25, Math.min(baseSize * 2, (baseSize * prof.w * pm) / 2));
       const a = Math.max(0, Math.min(1, baseA * prof.o));
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
@@ -1490,7 +1518,8 @@
       const s = Math.max(0, Math.min(1, cum[i] / total));
       const prof = fadeProfile(s, cfg, dStart, dEnd, fadeDist);
       if (prof.o < 0.999) anyOpacityFade = true;
-      const r = Math.max(0.25, Math.min(baseSize * 2, (baseSize * prof.w) / 2));
+      const pm = pressureSizeMul(pts[i].p);
+      const r = Math.max(0.25, Math.min(baseSize * 2, (baseSize * prof.w * pm) / 2));
       radii[i] = r;
       alphas[i] = Math.max(0, Math.min(1, baseA * prof.o));
 
@@ -1675,10 +1704,11 @@
   // Pointer events can fire at 120-240 Hz; reusing point objects keeps the hot
   // path allocation-free (no per-event GC churn).
   const pointPool = [];
-  function allocPoint(x, y) {
-    const p = pointPool.length ? pointPool.pop() : { x: 0, y: 0 };
+  function allocPoint(x, y, pressure) {
+    const p = pointPool.length ? pointPool.pop() : { x: 0, y: 0, p: 1 };
     p.x = x;
     p.y = y;
+    p.p = (typeof pressure === 'number' && isFinite(pressure)) ? pressure : 1;
     return p;
   }
   function releasePoints(pts) {
@@ -1701,11 +1731,11 @@
     return pts;
   }
 
-  // Fixed-size ring buffer for raw pointer samples. High-frequency pointermove
-  // callbacks write two floats and return; nothing is allocated and no canvas
-  // work happens until the next requestAnimationFrame.
+  // Fixed-size ring buffer for raw pointer samples (x, y, pressure).
+  // High-frequency pointermove callbacks write three floats and return; nothing
+  // is allocated and no canvas work happens until the next requestAnimationFrame.
   const STROKE_INPUT_CAP = 4096;
-  const strokeInput = new Float32Array(STROKE_INPUT_CAP * 2);
+  const strokeInput = new Float32Array(STROKE_INPUT_CAP * 3);
   let strokeInputHead = 0;
   let strokeInputCount = 0;
   let strokeFrameRAF = 0;
@@ -1852,7 +1882,7 @@
     }
   }
 
-  function beginStroke(docX, docY) {
+  function beginStroke(docX, docY, pressure) {
     if (!canEditActive()) return;
     const layer = getActiveLayer();
     if (!layer) return;
@@ -1863,7 +1893,8 @@
     strokeFrameBBox = null;
 
     state.isDrawing = true;
-    state.points = [allocPoint(docX, docY)];
+    state.strokePressure = pressureSizeMul(pressure);
+    state.points = [allocPoint(docX, docY, pressure)];
     state.smoothPoint.x = docX;
     state.smoothPoint.y = docY;
     resetStabilizer(docX, docY);
@@ -1896,6 +1927,7 @@
       opacity: safeBrushOpacity(),
       brushType: state.brushType,
       fade: fadeActive ? Object.assign({}, getFadeSettings()) : null,
+      pressure: pressure,
       x: docX, y: docY,
     });
 
@@ -1930,7 +1962,7 @@
     }
 
     if (isStampStroke()) {
-      beginStampStroke(docX, docY, layer);
+      beginStampStroke(docX, docY, layer, pressure);
       return;
     }
 
@@ -1938,7 +1970,7 @@
     // The buffer context is configured once here and reused for the whole
     // stroke, so the per-point hot loop never touches style state again.
     const size = safeBrushSize();
-    const radius = size / 2;
+    const radius = Math.max(0.25, (size / 2) * pressureSizeMul(pressure));
     strokeBufferCtx.globalAlpha = 1.0;
     strokeBufferCtx.globalCompositeOperation = 'source-over';
     strokeBufferCtx.fillStyle = state.tool === 'eraser' ? '#000000' : state.brushColor;
@@ -1949,12 +1981,13 @@
     compositeStrokeBufferToLayer(layer);
   }
 
-  function continueStroke(rawX, rawY, deferRender) {
+  function continueStroke(rawX, rawY, deferRender, pressure) {
     if (!state.isDrawing) return;
     const layer = getActiveLayer();
     if (!layer) return;
 
     const fadeActive = isFadeStroke();
+    const rawP = (typeof pressure === 'number' && isFinite(pressure)) ? pressure : 1;
 
     let x, y;
     if (stabilizer.raw) {
@@ -1982,8 +2015,8 @@
     const minDistSq = fadeActive ? 0.0001 : 0.04;
     if (distSq < minDistSq) return;
     const dist = Math.sqrt(distSq);
-    pts.push(allocPoint(x, y));
-    emitStroke('move', { x, y });
+    pts.push(allocPoint(x, y, rawP));
+    emitStroke('move', { x, y, pressure: rawP });
 
     if (fadeActive) {
       if (!deferRender) {
@@ -1994,14 +2027,19 @@
     }
 
     if (isStampStroke()) {
-      continueStampStroke(x, y, deferRender);
+      continueStampStroke(x, y, deferRender, rawP);
       return;
     }
 
     const size = safeBrushSize();
-    const radius = size / 2;
-    expandStrokeBBox(last.x - radius, last.y - radius, x + radius, y + radius);
-    expandStrokeFrameBBox(last.x - radius, last.y - radius, x + radius, y + radius);
+    const baseR = size / 2;
+    const targetMul = pressureSizeMul(rawP);
+    state.strokePressure += (targetMul - state.strokePressure) * 0.5;
+    const radius = Math.max(0.25, baseR * state.strokePressure);
+    // Grow bounds by the full (unpressured) radius so shrinking pressure can
+    // never clip the wider stamps already painted behind the cursor.
+    expandStrokeBBox(last.x - baseR, last.y - baseR, x + baseR, y + baseR);
+    expandStrokeFrameBBox(last.x - baseR, last.y - baseR, x + baseR, y + baseR);
     // Step is a small fraction of radius (step = radius * 0.1) so stamps overlap densely into a smooth solid ribbon
     const step = Math.max(0.5, radius * 0.1);
     const steps = Math.max(1, Math.ceil(dist / step));
@@ -2427,11 +2465,12 @@
 
   // A stamp descriptor keeps its random scatter/rotation frozen so repeated
   // fade re-renders produce an identical path (only size/opacity change).
-  function makeFadeStamp(x, y, arc) {
+  function makeFadeStamp(x, y, arc, pressure) {
     const ss = stampState;
     const scat = ss.scatter * ss.size;
     return {
       x, y, arc,
+      p: (typeof pressure === 'number' && isFinite(pressure)) ? pressure : 1,
       ox: (Math.random() * 2 - 1) * scat,
       oy: (Math.random() * 2 - 1) * scat,
       rot: Math.random() * Math.PI * 2,
@@ -2459,11 +2498,11 @@
       const dEnd = total - list[i].arc;
       const s = Math.min(1, Math.max(0, list[i].arc / total));
       const prof = fadeProfile(s, cfg, dStart, dEnd, fadeDist);
-      stampAt(list[i], prof.w, prof.o);
+      stampAt(list[i], prof.w * pressureSizeMul(list[i].p), prof.o);
     }
   }
 
-  function beginStampStroke(docX, docY, layer) {
+  function beginStampStroke(docX, docY, layer, pressure) {
     const ss = stampState;
     const cfg = getBrushTypeCfg();
     const bs = getBrushState();
@@ -2505,15 +2544,15 @@
     ss.sctx.globalAlpha = ss.flow;
 
     if (ss.fade) {
-      ss.fadeStamps.push(makeFadeStamp(ss.lastX, ss.lastY, 0));
+      ss.fadeStamps.push(makeFadeStamp(ss.lastX, ss.lastY, 0, pressure));
       repaintFadeStamps();
     } else {
-      addStamp(ss.lastX, ss.lastY, 1);
+      addStamp(ss.lastX, ss.lastY, pressureSizeMul(pressure));
     }
     stampRenderNow();
   }
 
-  function continueStampStroke(x, y, deferRender) {
+  function continueStampStroke(x, y, deferRender, pressure) {
     const ss = stampState;
     if (!ss.active) return;
     const seg = Math.hypot(x - ss.prevX, y - ss.prevY);
@@ -2527,13 +2566,14 @@
 
     let sizeMul = 1;
     if (ss.taper) sizeMul = Math.max(0.4, 1 - ss.taper * Math.min(1, seg / Math.max(1, ss.size * 1.5)));
+    sizeMul *= pressureSizeMul(pressure);
 
     for (let k = 1; k <= steps; k++) {
       ss.lastX += ux * ss.spacingPx;
       ss.lastY += uy * ss.spacingPx;
       if (ss.fade) {
         ss.fadeArc += ss.spacingPx;
-        ss.fadeStamps.push(makeFadeStamp(ss.lastX, ss.lastY, ss.fadeArc));
+        ss.fadeStamps.push(makeFadeStamp(ss.lastX, ss.lastY, ss.fadeArc, pressure));
       } else {
         addStamp(ss.lastX, ss.lastY, sizeMul);
       }
@@ -6184,6 +6224,10 @@
       $('#brushStabilizerVal').textContent = e.target.value + '%';
       queueSave();
     });
+    $('#checkPressure').addEventListener('change', (e) => {
+      state.pressureEnabled = e.target.checked;
+      queueSave();
+    });
     $('#checkFadeEnds').addEventListener('change', (e) => {
       const on = e.target.checked;
       if (state.fade) {
@@ -6520,15 +6564,16 @@
   // Pointer handlers only enqueue raw screen samples. All smoothing, path
   // building and canvas compositing happens in processStrokeFrame(), once per
   // animation frame, no matter how many pointer/coalesced events arrived.
-  function queueStrokePoint(clientX, clientY) {
+  function queueStrokePoint(clientX, clientY, pressure) {
     if (!state.isDrawing) return;
     if (strokeInputCount >= STROKE_INPUT_CAP) {
       strokeInputHead = (strokeInputHead + 1) % STROKE_INPUT_CAP;
       strokeInputCount--;
     }
-    const idx = ((strokeInputHead + strokeInputCount) % STROKE_INPUT_CAP) * 2;
+    const idx = ((strokeInputHead + strokeInputCount) % STROKE_INPUT_CAP) * 3;
     strokeInput[idx] = clientX;
     strokeInput[idx + 1] = clientY;
+    strokeInput[idx + 2] = (typeof pressure === 'number' && isFinite(pressure)) ? pressure : 1;
     strokeInputCount++;
     if (!strokeFrameRAF) strokeFrameRAF = requestAnimationFrame(processStrokeFrame);
   }
@@ -6553,13 +6598,14 @@
     strokeFrameBBox = null;
     const rect = canvasViewport.getBoundingClientRect();
     while (strokeInputCount > 0) {
-      const idx = strokeInputHead * 2;
+      const idx = strokeInputHead * 3;
       const sx = strokeInput[idx];
       const sy = strokeInput[idx + 1];
+      const sp = strokeInput[idx + 2];
       strokeInputHead = (strokeInputHead + 1) % STROKE_INPUT_CAP;
       strokeInputCount--;
       screenToDocInto(sx, sy, strokeDocScratch, rect);
-      continueStroke(strokeDocScratch.x, strokeDocScratch.y, true);
+      continueStroke(strokeDocScratch.x, strokeDocScratch.y, true, sp);
     }
     flushStrokeFrame(layer, strokeFrameBBox);
     strokeFrameBBox = null;
@@ -6609,7 +6655,7 @@
     switch (state.tool) {
       case 'brush':
       case 'eraser':
-        beginStroke(doc.x, doc.y);
+        beginStroke(doc.x, doc.y, readPointerPressure(e, e.pointerType));
         break;
       case 'fill':
         floodFill(doc.x, doc.y);
@@ -6749,10 +6795,10 @@
       if (coalesced && coalesced.length > 0) {
         for (let i = 0; i < coalesced.length; i++) {
           const ce = coalesced[i];
-          queueStrokePoint(ce.clientX, ce.clientY);
+          queueStrokePoint(ce.clientX, ce.clientY, readPointerPressure(ce, ce.pointerType || e.pointerType));
         }
       } else {
-        queueStrokePoint(e.clientX, e.clientY);
+        queueStrokePoint(e.clientX, e.clientY, readPointerPressure(e, e.pointerType));
       }
       return;
     }
@@ -7404,6 +7450,7 @@
         size: state.brushSize,
         opacity: state.brushOpacity,
         stabilization: state.stabilization,
+        pressureEnabled: state.pressureEnabled,
         fade: state.fade,
         type: state.brushType,
         settings: state.brushSettings,
@@ -8000,6 +8047,8 @@
     if (bo) { bo.value = Math.round(state.brushOpacity * 100); setNumVal($('#brushOpacityVal'), Math.round(state.brushOpacity * 100)); }
     const st = $('#brushStabilizer');
     if (st) { st.value = Math.round(state.stabilization * 100); $('#brushStabilizerVal').textContent = Math.round(state.stabilization * 100) + '%'; }
+    const sp = $('#checkPressure');
+    if (sp) sp.checked = !!state.pressureEnabled;
     updateBrushCursor();
   }
 
@@ -8049,6 +8098,7 @@
       if (data.brush.size) { const n = Number(data.brush.size); if (isFinite(n) && n > 0) state.brushSize = Math.min(4000, n); }
       if (data.brush.opacity != null) { const n = Number(data.brush.opacity); state.brushOpacity = isFinite(n) ? Math.max(0, Math.min(1, n)) : 1; }
       if (data.brush.stabilization != null) state.stabilization = data.brush.stabilization;
+      if (data.brush.pressureEnabled != null) state.pressureEnabled = !!data.brush.pressureEnabled;
       if (data.brush.type && BRUSH_TYPES[data.brush.type]) state.brushType = data.brush.type;
       if (data.brush.settings && typeof data.brush.settings === 'object') {
         Object.keys(data.brush.settings).forEach((t) => {
@@ -8627,7 +8677,6 @@
       bctx.globalCompositeOperation = 'source-over';
       bctx.clearRect(0, 0, state.docWidth, state.docHeight);
 
-      const radius = Math.max(0.5, (Number(msg.size) || 5) / 2);
       let alpha = Number(msg.opacity);
       if (!isFinite(alpha)) alpha = 1;
       alpha = Math.max(0, Math.min(1, alpha));
@@ -8636,6 +8685,7 @@
       // per-device (own edits only). The origin device owns undoing it and will
       // ship the restored pixels back via a `restore` message.
       const baseSize = Number(msg.size) || 5;
+      const radius = Math.max(0.5, (baseSize / 2) * pressureSizeMul(msg.pressure));
       const st = {
         layer, snap, buf, bctx,
         snapRegion: { x0: 0, y0: 0, x1: state.docWidth, y1: state.docHeight },
@@ -8644,7 +8694,7 @@
         radius, alpha,
         baseSize,
         fade: (msg.fade && msg.fade.enabled) ? msg.fade : null,
-        points: [{ x: msg.x, y: msg.y }],
+        points: [{ x: msg.x, y: msg.y, p: msg.pressure }],
         lastX: msg.x, lastY: msg.y,
         bbox: {
           x0: msg.x - radius, y0: msg.y - radius,
@@ -8665,8 +8715,9 @@
     if (!st) return;
 
     if (msg.ev === 'move') {
+      st.radius = Math.max(0.5, (st.baseSize / 2) * pressureSizeMul(msg.pressure));
       if (st.fade) {
-        st.points.push({ x: msg.x, y: msg.y });
+        st.points.push({ x: msg.x, y: msg.y, p: msg.pressure });
         renderRemoteFadeStroke(st);
       } else {
         stampRemoteSegment(st, st.lastX, st.lastY, msg.x, msg.y);
